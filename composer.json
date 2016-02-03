@@ -1,0 +1,30 @@
+{
+    "name": "thumbtack/querycache",
+    "description": "A simple PDO query interface with support for result set and row level caching",
+    "keywords": [
+        "cache",
+        "sql",
+        "query",
+        "PDO",
+        "prepared statement",
+        "parameter binding",
+        "PSR-6",
+        "caching",
+        "memcached",
+        "apcu"
+    ],
+    "homepage": "http://github.com/thumbtack/querycache",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": "^5.4|^7.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "QueryCache\\": "src/"
+        }
+    }
+}
