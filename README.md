@@ -4,7 +4,7 @@ A simple query caching layer built around
 [PDO](http://php.net/manual/en/class.pdo.php).
 It can cache to [Memcached](http://php.net/manual/en/class.memcached.php),
 [APCu](http://php.net/manual/en/ref.apcu.php),
-local request cache, or anything that implements the [CacheInterface]().
+local request cache, or anything that implements the [CacheInterface](https://github.com/thumbtack/querycache/blob/master/src/CacheInterface.php).
 
 ## Composer Install:
 ```
