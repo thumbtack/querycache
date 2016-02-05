@@ -77,6 +77,14 @@ class QueryGutsTest extends PHPUnit_Framework_TestCase {
     /**
      * @expectedException \Exception
      */
+    public function test_invalid_read_db() {
+        $obj = new StdClass();
+        $query = new QueryGuts($obj);
+    }
+
+    /**
+     * @expectedException \Exception
+     */
     public function test_invalid_write_db() {
         $obj = new StdClass();
         $pdo = $this->get_pdo();

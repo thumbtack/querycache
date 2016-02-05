@@ -17,56 +17,61 @@ class Query {
      * @param CacheInterface|null $cache
      * @throws Exception
      */
-    public function __construct(PDO $read_db, $write_db=null, $cache=null) {
+    public function __construct($read_db, $write_db=null, $cache=null) {
         $this->set_read_db($read_db);
+        $this->set_write_db($write_db);
+        $this->set_cache($cache);
+    }
 
+    /**
+     * @param PDO|null $read_db
+     * @return $this
+     * @throws Exception
+     */
+    public function set_read_db($read_db) {
+        if ($read_db instanceof PDO) {
+            $this->read_db = $read_db;
+        } else {
+            throw new Exception('Invalid type for: read_db');
+        }
+        return $this;
+    }
+
+    /**
+     * @param PDO|CacheInterface $write_db
+     * @return $this
+     * @throws Exception
+     */
+    public function set_write_db($write_db) {
         if ($write_db instanceof PDO) {
-            $this->set_write_db($write_db);
+            $this->write_db = $write_db;
         } else if ($write_db instanceof CacheInterface) {
-            $this->set_write_db($read_db);
-            if ($cache === null) {
-                $cache = $write_db;
-            }
+            $this->set_cache($write_db);
+            $this->write_db = $this->get_read_db();
         } else if ($write_db === null) {
-            $this->set_write_db($read_db);
+            $this->write_db = $this->get_read_db();
         } else {
             throw new Exception('Invalid type for: write_db');
         }
 
-        if ($cache instanceof CacheInterface) {
-            $this->set_cache($cache);
-        } else if ($cache === null) {
+        return $this;
+    }
+
+    /**
+     * @param CacheInterface|null $cache
+     * @return $this
+     * @throws Exception
+     */
+    public function set_cache($cache) {
+        if ($cache === null && !$this->cache) {
             $cache = new BlackHole();
-            $this->set_cache($cache);
-        } else {
+        }
+        if ($cache instanceof CacheInterface) {
+            $this->cache = $cache;
+        } else if ($cache && !$this->cache) {
             throw new Exception('Invalid type for: cache');
         }
-    }
 
-    /**
-     * @param PDO $read_db
-     * @return $this
-     */
-    public function set_read_db(PDO $read_db) {
-        $this->read_db = $read_db;
-        return $this;
-    }
-
-    /**
-     * @param PDO $write_db
-     * @return $this
-     */
-    public function set_write_db(PDO $write_db) {
-        $this->write_db = $write_db;
-        return $this;
-    }
-
-    /**
-     * @param CacheInterface $cache
-     * @return $this
-     */
-    public function set_cache(CacheInterface $cache) {
-        $this->cache = $cache;
         return $this;
     }
 
@@ -388,6 +393,18 @@ class Query {
     }
 
     /**
+     * @param \PDO $db
+     * @param string $sql
+     * @param array $params
+     * @return \PDOStatement
+     */
+    protected function execute($db, $sql, $params) {
+        $statement = $db->prepare($sql);
+        $statement->execute($params);
+        return $statement;
+    }
+
+    /**
      * Gets result sets for prepared SELECT statements.
      * Expands query tokens when attempting to bind an array.
      * Handles result set and row level caching based on template strings. The
@@ -440,9 +457,7 @@ class Query {
         $flat_params = $this->flatten_params_map($tokens, $params_map);
         $sql = $this->parameterize_sql($params_map, $sql);
 
-        $db = $this->get_read_db();
-        $statement = $db->prepare($sql);
-        $statement->execute($flat_params);
+        $statement = $this->execute($this->get_read_db(), $sql, $flat_params);
         $statement->setFetchMode(PDO::FETCH_ASSOC);
         $rows = $statement->fetchAll();
 
@@ -470,8 +485,6 @@ class Query {
      * @throws QueryException
      */
     public function write($sql, $params_map=[], $options=[]) {
-        $db = $this->get_write_db();
-
         $defaults = [
             'row_cache' => '',
             'result_set_cache' => '',
@@ -485,8 +498,8 @@ class Query {
         $flat_params = $this->flatten_params_map($tokens, $params_map);
         $sql = $this->parameterize_sql($params_map, $sql);
 
-        $statement = $db->prepare($sql);
-        $statement->execute($flat_params);
+        $db = $this->get_write_db();
+        $this->execute($db, $sql, $flat_params);
 
         $keys = [];
         if ($result_set_cache) {
