@@ -135,49 +135,57 @@ class Query {
     }
 
     /**
-     * @param string $key_format - ':' delimited token string
+     * @param string|string[] $key_formats - ':' delimited token string
      * @param array $params_map - same as param map used for queries
      * @return array - map of cache keys and parameters used to build key
      * @throws QueryException
      */
-    protected function cache_key_params_map($key_format, $params_map) {
-        $found = preg_match_all('/(:\w+)/', $key_format, $tokens);
-
-        $temp_keys = [$key_format => []];
-        if ($found < 1) {
-            return $temp_keys;
+    protected function cache_key_params_map($key_formats, $params_map) {
+        if (is_string($key_formats)) {
+            $key_formats = [$key_formats];
         }
-
-        $tokens = array_unique($tokens[1]);
-        if ($found !== count($tokens)) {
-            throw new QueryException('Duplicated cache key token.');
-        }
-        $tokens = $this->length_sort($tokens);
 
         $keys = [];
-        foreach ($tokens as $token) {
-            if (!isset($params_map[$token])) {
-                throw new QueryException('Token: "' . $token . '" not found.');
+        foreach ($key_formats as $key_format) {
+            $found = preg_match_all('/(:\w+)/', $key_format, $tokens);
+
+            $temp_keys = [$key_format => []];
+            if ($found < 1) {
+                return $temp_keys;
             }
 
-            $keys = [];
-            $params = $params_map[$token];
-            if (is_array($params)) {
-                foreach ($temp_keys as $temp_key => $map) {
-                    foreach ($params as $param) {
-                        $key = str_replace($token, $param, $temp_key);
-                        $keys[$key] = array_merge($map, [$token => $param]);
+            $tokens = array_unique($tokens[1]);
+            if ($found !== count($tokens)) {
+                throw new QueryException('Duplicated cache key token.');
+            }
+
+            $tokens = $this->length_sort($tokens);
+            foreach ($tokens as $token) {
+                if (!isset($params_map[$token])) {
+                    throw new QueryException('Token: "' . $token . '" not found.');
+                }
+
+                $inner_keys = [];
+                $params = $params_map[$token];
+                if (is_array($params)) {
+                    foreach ($temp_keys as $temp_key => $map) {
+                        foreach ($params as $param) {
+                            $key = str_replace($token, $param, $temp_key);
+                            $inner_keys[$key] = array_merge($map, [$token => $param]);
+                        }
+                    }
+                } else {
+                    foreach ($temp_keys as $temp_key => $map) {
+                        $key = str_replace($token, $params, $temp_key);
+                        $inner_keys[$key] = $map;
                     }
                 }
-            } else {
-                foreach ($temp_keys as $temp_key => $map) {
-                    $key = str_replace($token, $params, $temp_key);
-                    $keys[$key] = $map;
-                }
-            }
 
-            $temp_keys = $keys;
+                $temp_keys = $inner_keys;
+            }
+            $keys = array_merge($keys, $temp_keys);
         }
+
 
         return $keys;
     }
