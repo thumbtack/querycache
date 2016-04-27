@@ -19,23 +19,20 @@ class Memcache extends BaseCache {
      */
     private function get_memcache() {
         if ($this->memcache === null) {
-            if ($this->get_option('persist')) {
-                $persistent_id = md5(json_encode($this->get_option('servers')));
+            $options = $this->get_option('options', []);
+            $servers = $this->get_option('servers', []);
+            if ($this->get_option('persist', false)) {
+                $persistent_id = md5(json_encode(['o' => $options, 's' => $servers]));
                 $this->memcache = new \Memcached($persistent_id);
             } else {
                 $this->memcache = new \Memcached();
             }
 
             if (count($this->memcache->getServerList()) < 1) {
-                $this->memcache->setOptions([
-                    \Memcached::OPT_DISTRIBUTION => \Memcached::DISTRIBUTION_CONSISTENT,
-                    \Memcached::OPT_LIBKETAMA_COMPATIBLE => true,
-                    \Memcached::OPT_NO_BLOCK => true,
-                    \Memcached::OPT_CONNECT_TIMEOUT => 50,
-                    \Memcached::OPT_RETRY_TIMEOUT => 1,
-                    //\Memcached::OPT_CLIENT_MODE => \Memcached::DYNAMIC_CLIENT_MODE,
-                ]);
-                $this->memcache->addServers($this->get_option('servers'));
+                if (count($options) > 0) {
+                    $this->memcache->setOptions($options);
+                }
+                $this->memcache->addServers($servers);
             }
         }
         return $this->memcache;
