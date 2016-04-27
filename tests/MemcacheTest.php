@@ -16,6 +16,10 @@ class MemcacheTest extends CacheInterfaceTest {
             ],
             'prefix' => 'tests/',
             'persist' => false,
+            'options' => [
+                \Memcached::OPT_DISTRIBUTION => \Memcached::DISTRIBUTION_CONSISTENT,
+                \Memcached::OPT_LIBKETAMA_COMPATIBLE => true,
+            ]
         ];
         $this->cache = new Memcache(true, $options);
         $this->cache->set_default_ttl(1);
