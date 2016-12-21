@@ -312,13 +312,17 @@ class Query {
         }
 
         $row_map = [];
-        $reverse = array_reverse($map_format);
         foreach ($rows as $row) {
-            $entry = $row;
-            foreach ($reverse as $column_key) {
-                $entry = [ $row[$column_key] => $entry ];
+            $current = &$row_map;
+            foreach ($map_format as $column_key) {
+                $v = $row[$column_key];
+                if (!isset($row_map[$v])) {
+                    $current[$v] = [];
+                }
+                $current = &$current[$v];
             }
-            $row_map = array_replace_recursive($row_map, $entry);
+            $current = $row;
+            unset($current);
         }
 
         return $row_map;
