@@ -200,7 +200,10 @@ class Query {
         $item = $this->get_cache()->get($key);
         if ($item->hit()) {
             $params_map = false;
-            return $item->get_data();
+            $result = $item->get_data();
+            if (!empty($result)) {
+                return $result;
+            }
         }
 
         return [];
